@@ -1,0 +1,2 @@
+# whereismytoken
+Plugin for Figma
