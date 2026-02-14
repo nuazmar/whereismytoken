@@ -1,17 +1,239 @@
-<h2>Rectangle Creator</h2>
-<p>Count: <input id="count" type="number" value="5"></p>
-<button id="create">Create</button>
-<button id="cancel">Cancel</button>
-<script>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 12px 16px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      color: #333;
+      background: #fff;
+    }
+    h2 {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #000;
+    }
+    .field {
+      margin-bottom: 10px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+      color: #555;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #0d99ff;
+      box-shadow: 0 0 0 2px rgba(13, 153, 255, 0.2);
+    }
+    input[type="text"]::placeholder {
+      color: #999;
+    }
+    .buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    #search {
+      background: #0d99ff;
+      color: #fff;
+    }
+    #search:hover {
+      background: #0b85e0;
+    }
+    #cancel {
+      background: #f0f0f0;
+      color: #333;
+    }
+    #cancel:hover {
+      background: #e5e5e5;
+    }
+    .results-section {
+      margin-top: 4px;
+    }
+    .results-header {
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #555;
+    }
+    .results-list {
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    .result-item {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .result-item:last-child {
+      border-bottom: none;
+    }
+    .result-item:hover {
+      background: #e8f4fd;
+    }
+    .result-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .result-type {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+    }
+    .message {
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .message.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .message.info {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+    .empty-state {
+      padding: 20px;
+      text-align: center;
+      color: #999;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Where is the token</h2>
+  <div class="field">
+    <label for="token">Nombre del token o variable</label>
+    <input
+      id="token"
+      type="text"
+      placeholder="Ej: Color: ocre/80"
+      autocomplete="off"
+    />
+  </div>
+  <div class="buttons">
+    <button id="search">Buscar</button>
+    <button id="cancel">Cerrar</button>
+  </div>
+  <div class="results-section">
+    <div class="results-header" id="resultsHeader">Resultados</div>
+    <div class="results-list" id="resultsList">
+      <div class="empty-state" id="emptyState">Introduce un token y pulsa Buscar.</div>
+    </div>
+    <div id="message" class="message" style="display: none;"></div>
+  </div>
+  <script>
+    const tokenInput = document.getElementById('token');
+    const resultsList = document.getElementById('resultsList');
+    const resultsHeader = document.getElementById('resultsHeader');
+    const messageEl = document.getElementById('message');
+    const emptyState = document.getElementById('emptyState');
 
-document.getElementById('create').onclick = () => {
-  const textbox = document.getElementById('count');
-  const count = parseInt(textbox.value, 10);
-  parent.postMessage({ pluginMessage: { type: 'create-shapes', count } }, '*')
-}
+    function showMessage(text, isError) {
+      messageEl.textContent = text;
+      messageEl.className = 'message ' + (isError ? 'error' : 'info');
+      messageEl.style.display = text ? 'block' : 'none';
+    }
 
-document.getElementById('cancel').onclick = () => {
-  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
-}
+    function renderResults(results, error) {
+      emptyState.style.display = 'none';
+      resultsList.innerHTML = '';
+      showMessage(error || '', !!error);
 
-</script>
+      if (results.length === 0 && !error) {
+        emptyState.style.display = 'block';
+        emptyState.textContent = 'Introduce un token y pulsa Buscar.';
+        resultsHeader.textContent = 'Resultados';
+        return;
+      }
+
+      if (results.length === 0) {
+        resultsHeader.textContent = 'Resultados';
+        return;
+      }
+
+      resultsHeader.textContent = 'Resultados (' + results.length + ')';
+      results.forEach(function (item) {
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        div.dataset.id = item.id;
+        div.innerHTML =
+          '<span class="result-name" title="' + escapeHtml(item.name) + '">' +
+          escapeHtml(item.name) +
+          '</span><span class="result-type">' +
+          escapeHtml(item.type) +
+          '</span>';
+        div.onclick = function () {
+          parent.postMessage(
+            { pluginMessage: { type: 'select-nodes', ids: [item.id] } },
+            '*'
+          );
+        };
+        resultsList.appendChild(div);
+      });
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    document.getElementById('search').onclick = function () {
+      const query = tokenInput.value.trim();
+      parent.postMessage({ pluginMessage: { type: 'search-token', query } }, '*');
+    };
+
+    document.getElementById('cancel').onclick = function () {
+      parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
+    };
+
+    tokenInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        document.getElementById('search').click();
+      }
+    });
+
+    window.onmessage = function (event) {
+      const msg = event.data.pluginMessage;
+      if (msg && msg.type === 'search-result') {
+        renderResults(msg.results || [], msg.error || null);
+      }
+    };
+  </script>
+</body>
+</html>
