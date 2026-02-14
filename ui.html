@@ -78,39 +78,53 @@
       color: #555;
     }
     .results-list {
-      max-height: 260px;
+      max-height: 320px;
       overflow-y: auto;
       border: 1px solid #e0e0e0;
       border-radius: 6px;
       background: #fafafa;
     }
     .result-item {
-      padding: 8px 10px;
+      padding: 10px 12px;
       border-bottom: 1px solid #eee;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
     }
     .result-item:last-child {
       border-bottom: none;
     }
     .result-item:hover {
-      background: #e8f4fd;
+      background: #f5f5f5;
     }
-    .result-name {
-      flex: 1;
-      min-width: 0;
+    .result-row {
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+    .result-row:last-of-type {
+      margin-bottom: 0;
+    }
+    .result-label {
+      color: #888;
+      font-size: 11px;
+      margin-right: 6px;
+    }
+    .result-value {
+      color: #333;
+    }
+    .result-layer {
+      max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .result-type {
-      flex-shrink: 0;
-      font-size: 11px;
-      color: #888;
-      text-transform: uppercase;
+    .result-link {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #0d99ff;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .result-link:hover {
+      text-decoration: underline;
     }
     .message {
       padding: 10px;
@@ -192,17 +206,31 @@
         div.className = 'result-item';
         div.dataset.id = item.id;
         div.innerHTML =
-          '<span class="result-name" title="' + escapeHtml(item.name) + '">' +
-          escapeHtml(item.name) +
-          '</span><span class="result-type">' +
-          escapeHtml(item.type) +
-          '</span>';
-        div.onclick = function () {
-          parent.postMessage(
-            { pluginMessage: { type: 'select-nodes', ids: [item.id] } },
-            '*'
-          );
-        };
+          '<div class="result-row">' +
+          '<span class="result-label">Componente:</span>' +
+          '<span class="result-value">' + escapeHtml(item.componentName) + '</span>' +
+          '</div>' +
+          '<div class="result-row result-layer" title="' + escapeHtml(item.layerNameFull || item.layerName) + '">' +
+          '<span class="result-label">Capa:</span>' +
+          '<span class="result-value">' + escapeHtml(item.layerName) + '</span>' +
+          '</div>' +
+          '<div class="result-row">' +
+          '<span class="result-label">Tipo:</span>' +
+          '<span class="result-value">' + escapeHtml(item.typeLabel || item.type) + '</span>' +
+          '</div>' +
+          '<a class="result-link" data-id="' + escapeHtml(item.id) + '" href="#">Ver en canvas</a>';
+        const link = div.querySelector('.result-link');
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var nodeId = link.getAttribute('data-id');
+          if (nodeId) {
+            parent.postMessage(
+              { pluginMessage: { type: 'select-nodes', ids: [nodeId] } },
+              '*'
+            );
+          }
+        });
         resultsList.appendChild(div);
       });
     }
